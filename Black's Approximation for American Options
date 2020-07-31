@@ -1,0 +1,329 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © SegaRKO
+
+//@version=4
+study("Black-Scholes Model [American Options]", precision=10)
+//Your Strike Price
+K=input(345,minval=0.0001,title="Your Strike Price")
+r=input(0.00132, minval=0.000000, title="Risk Free Rate")
+D1=input(0.82, minval=0.000000, title="Next Dividend")
+t1=input(61, title="Days until Ex-Dividend 1")
+D2=input(0.82, minval=0.000000, title="Next Furthest Dividend")
+t2=input(152, title="Days until Ex-Dividend 2")
+
+//Expected Movement Model
+S = close
+Minutes = input(0, title="Minutes until expiry")
+Hours = input(0, title="Hours until expiry")
+Days = input(19, minval=0, title="Days until expiry")
+Expiry = (Hours + Minutes / 60) / 24 + Days
+TimeFrame = input(1440, minval=0, title="Timeframe in minutes")
+len = 365  //Number of Days in a year. 
+Time = 60 * 24 * Expiry / TimeFrame
+
+//Black's Approximation for American Options
+T=Time/len
+sigma=sqrt(variance(S,len))
+//American Option Method 1. This calculates the price of an option that expires upon expiry.
+PV1=(D1*exp(-(r)*(t1/len)))+(D2*exp(-(r)*(t2/len)))
+discount1=S-PV1
+d1=(log(discount1/K)+(r+pow(sigma,2)/2)*T)/(sigma*sqrt(T))
+d2=d1-(sigma*sqrt(T))
+
+//American Option Method 2. This calculates the price of an option that expires on the t2 date.
+PV2=(D1*exp(-(r)*(t1/len)))
+discount2=S-PV2
+ad1=(log(discount2/K)+(r+pow(sigma,2)/2)*(t2/len))/(sigma*sqrt(t2/len))
+ad2=ad1-(sigma*sqrt(t2/len))
+
+//Cumulative distribution of Black Scholes d1
+Nd1= iff(d1<=0 and d1>-0.1,0.50,
+     iff(d1<=-0.1 and d1>-0.2,0.46,
+     iff(d1<=-0.2 and d1>-0.3,0.42,
+     iff(d1<=-0.3 and d1>-0.4,0.38,
+     iff(d1<=-0.4 and d1>-0.5,0.35,
+     iff(d1<=-0.5 and d1>-0.6,0.31,
+     iff(d1<=-0.6 and d1>-0.7,0.27,
+     iff(d1<=-0.7 and d1>-0.8,0.24,
+     iff(d1<=-0.8 and d1>-0.9,0.21,
+     iff(d1<=-0.9 and d1>-1.0,0.18,
+     iff(d1<=-1.0 and d1>-1.1,0.16,
+     iff(d1<=-1.1 and d1>-1.2,0.14,
+     iff(d1<=-1.2 and d1>-1.3,0.12,
+     iff(d1<=-1.3 and d1>-1.4,0.10,
+     iff(d1<=-1.4 and d1>-1.5,0.08,
+     iff(d1<=-1.6 and d1>-1.7,0.06,
+     iff(d1<=-1.7 and d1>-1.8,0.05,
+     iff(d1<=-1.8 and d1>-1.9,0.04,
+     iff(d1<=-1.9 and d1>-2.0,0.03,
+     iff(d1<=-2.0 and d1>-2.1,0.023,
+     iff(d1<=-2.1 and d1>-2.2,0.018,
+     iff(d1<=-2.2 and d1>-2.3,0.014,
+     iff(d1<=-2.3 and d1>-2.4,0.011,
+     iff(d1<=-2.4 and d1>-2.5,0.010,
+     iff(d1<=-2.5 and d1>-2.6,0.006,
+     iff(d1<=-2.6 and d1>-2.7,0.005,
+     iff(d1<=-2.7 and d1>-2.8,0.004,
+     iff(d1<=-2.8 and d1>-2.9,0.003,
+     iff(d1<=-2.9 and d1>-3.0,0.002,
+     iff(d1<=-3.0 and d1>-3.1,0.001,
+     iff(d1<=-3.1,0.001,
+     iff(d1>=0 and d1<0.1,0.50,
+     iff(d1>=0.1 and d1<0.2,0.54,
+     iff(d1>=0.2 and d1<0.3,0.58,
+     iff(d1>=0.3 and d1<0.4,0.62,
+     iff(d1>=0.4 and d1<0.5,0.66,
+     iff(d1>=0.5 and d1<0.6,0.69,
+     iff(d1>=0.6 and d1<0.7,0.73,
+     iff(d1>=0.7 and d1<0.8,0.76,
+     iff(d1>=0.8 and d1<0.9,0.78,
+     iff(d1>=0.9 and d1<1.0,0.82,
+     iff(d1>=1.0 and d1<1.1,0.84,
+     iff(d1>=1.1 and d1<1.2,0.86,
+     iff(d1>=1.2 and d1<1.3,0.88,
+     iff(d1>=1.3 and d1<1.4,0.90,
+     iff(d1>=1.4 and d1<1.5,0.92,
+     iff(d1>=1.5 and d1<1.6,0.93,
+     iff(d1>=1.6 and d1<1.7,0.94,
+     iff(d1>=1.7 and d1<1.8,0.95,
+     iff(d1>=1.8 and d1<1.9,0.96,
+     iff(d1>=1.9 and d1<2.0,0.97,
+     iff(d1>=2.0 and d1<2.1,0.977,
+     iff(d1>=2.1 and d1<2.2,0.982,
+     iff(d1>=2.2 and d1<2.3,0.986,
+     iff(d1>=2.3 and d1<2.4,0.989,
+     iff(d1>=2.4 and d1<2.5,0.992,
+     iff(d1>=2.5 and d1<2.6,0.994,
+     iff(d1>=2.6 and d1<2.7,0.995,
+     iff(d1>=2.7 and d1<2.8,0.996,
+     iff(d1>=2.8 and d1<2.9,0.997,
+     iff(d1>=2.9 and d1<3.0,0.998,
+     iff(d1>=3.0 and d1<3.1,0.999,
+     iff(d1>=3.1,0.999,
+     na)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+     
+//Cumulative distribution of Black Scholes d2     
+Nd2= iff(d2<=0 and d2>-0.1,0.50,
+     iff(d2<=-0.1 and d2>-0.2,0.46,
+     iff(d2<=-0.2 and d2>-0.3,0.42,
+     iff(d2<=-0.3 and d2>-0.4,0.38,
+     iff(d2<=-0.4 and d2>-0.5,0.35,
+     iff(d2<=-0.5 and d2>-0.6,0.31,
+     iff(d2<=-0.6 and d2>-0.7,0.27,
+     iff(d2<=-0.7 and d2>-0.8,0.24,
+     iff(d2<=-0.8 and d2>-0.9,0.21,
+     iff(d2<=-0.9 and d2>-1.0,0.18,
+     iff(d2<=-1.0 and d2>-1.1,0.16,
+     iff(d2<=-1.1 and d2>-1.2,0.14,
+     iff(d2<=-1.2 and d2>-1.3,0.12,
+     iff(d2<=-1.3 and d2>-1.4,0.10,
+     iff(d2<=-1.4 and d2>-1.5,0.08,
+     iff(d2<=-1.6 and d2>-1.7,0.06,
+     iff(d2<=-1.7 and d2>-1.8,0.05,
+     iff(d2<=-1.8 and d2>-1.9,0.04,
+     iff(d2<=-1.9 and d2>-2.0,0.03,
+     iff(d2<=-2.0 and d2>-2.1,0.023,
+     iff(d2<=-2.1 and d2>-2.2,0.018,
+     iff(d2<=-2.2 and d2>-2.3,0.014,
+     iff(d2<=-2.3 and d2>-2.4,0.011,
+     iff(d2<=-2.4 and d2>-2.5,0.010,
+     iff(d2<=-2.5 and d2>-2.6,0.006,
+     iff(d2<=-2.6 and d2>-2.7,0.005,
+     iff(d2<=-2.7 and d2>-2.8,0.004,
+     iff(d2<=-2.8 and d2>-2.9,0.003,
+     iff(d2<=-2.9 and d2>-3.0,0.002,
+     iff(d2<=-3.0 and d2>-3.1,0.001,
+     iff(d2<=-3.1,0.001,
+     iff(d2>=0 and d2<0.1,0.50,
+     iff(d2>=0.1 and d2<0.2,0.54,
+     iff(d2>=0.2 and d2<0.3,0.58,
+     iff(d2>=0.3 and d2<0.4,0.62,
+     iff(d2>=0.4 and d2<0.5,0.66,
+     iff(d2>=0.5 and d2<0.6,0.69,
+     iff(d2>=0.6 and d2<0.7,0.73,
+     iff(d2>=0.7 and d2<0.8,0.76,
+     iff(d2>=0.8 and d2<0.9,0.78,
+     iff(d2>=0.9 and d2<1.0,0.82,
+     iff(d2>=1.0 and d2<1.1,0.84,
+     iff(d2>=1.1 and d2<1.2,0.86,
+     iff(d2>=1.2 and d2<1.3,0.88,
+     iff(d2>=1.3 and d2<1.4,0.90,
+     iff(d2>=1.4 and d2<1.5,0.92,
+     iff(d2>=1.5 and d2<1.6,0.93,
+     iff(d2>=1.6 and d2<1.7,0.94,
+     iff(d2>=1.7 and d2<1.8,0.95,
+     iff(d2>=1.8 and d2<1.9,0.96,
+     iff(d2>=1.9 and d2<2.0,0.97,
+     iff(d2>=2.0 and d2<2.1,0.977,
+     iff(d2>=2.1 and d2<2.2,0.982,
+     iff(d2>=2.2 and d2<2.3,0.986,
+     iff(d2>=2.3 and d2<2.4,0.989,
+     iff(d2>=2.4 and d2<2.5,0.992,
+     iff(d2>=2.5 and d2<2.6,0.994,
+     iff(d2>=2.6 and d2<2.7,0.995,
+     iff(d2>=2.7 and d2<2.8,0.996,
+     iff(d2>=2.8 and d2<2.9,0.997,
+     iff(d2>=2.9 and d2<3.0,0.998,
+     iff(d2>=3.0 and d2<3.1,0.999,
+     iff(d2>=3.1,0.999,
+     na)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+     
+//Cumulative distribution of Black's Approximation
+Nad1= iff(ad1<=0 and ad1>-0.1,0.50,
+     iff(ad1<=-0.1 and ad1>-0.2,0.46,
+     iff(ad1<=-0.2 and ad1>-0.3,0.42,
+     iff(ad1<=-0.3 and ad1>-0.4,0.38,
+     iff(ad1<=-0.4 and ad1>-0.5,0.35,
+     iff(ad1<=-0.5 and ad1>-0.6,0.31,
+     iff(ad1<=-0.6 and ad1>-0.7,0.27,
+     iff(ad1<=-0.7 and ad1>-0.8,0.24,
+     iff(ad1<=-0.8 and ad1>-0.9,0.21,
+     iff(ad1<=-0.9 and ad1>-1.0,0.18,
+     iff(ad1<=-1.0 and ad1>-1.1,0.16,
+     iff(ad1<=-1.1 and ad1>-1.2,0.14,
+     iff(ad1<=-1.2 and ad1>-1.3,0.12,
+     iff(ad1<=-1.3 and ad1>-1.4,0.10,
+     iff(ad1<=-1.4 and ad1>-1.5,0.08,
+     iff(ad1<=-1.6 and ad1>-1.7,0.06,
+     iff(ad1<=-1.7 and ad1>-1.8,0.05,
+     iff(ad1<=-1.8 and ad1>-1.9,0.04,
+     iff(ad1<=-1.9 and ad1>-2.0,0.03,
+     iff(ad1<=-2.0 and ad1>-2.1,0.023,
+     iff(ad1<=-2.1 and ad1>-2.2,0.018,
+     iff(ad1<=-2.2 and ad1>-2.3,0.014,
+     iff(ad1<=-2.3 and ad1>-2.4,0.011,
+     iff(ad1<=-2.4 and ad1>-2.5,0.010,
+     iff(ad1<=-2.5 and ad1>-2.6,0.006,
+     iff(ad1<=-2.6 and ad1>-2.7,0.005,
+     iff(ad1<=-2.7 and ad1>-2.8,0.004,
+     iff(ad1<=-2.8 and ad1>-2.9,0.003,
+     iff(ad1<=-2.9 and ad1>-3.0,0.002,
+     iff(ad1<=-3.0 and ad1>-3.1,0.001,
+     iff(ad1<=-3.1,0.001,
+     iff(ad1>=0 and ad1<0.1,0.50,
+     iff(ad1>=0.1 and ad1<0.2,0.54,
+     iff(ad1>=0.2 and ad1<0.3,0.58,
+     iff(ad1>=0.3 and ad1<0.4,0.62,
+     iff(ad1>=0.4 and ad1<0.5,0.66,
+     iff(ad1>=0.5 and ad1<0.6,0.69,
+     iff(ad1>=0.6 and ad1<0.7,0.73,
+     iff(ad1>=0.7 and ad1<0.8,0.76,
+     iff(ad1>=0.8 and ad1<0.9,0.78,
+     iff(ad1>=0.9 and ad1<1.0,0.82,
+     iff(ad1>=1.0 and ad1<1.1,0.84,
+     iff(ad1>=1.1 and ad1<1.2,0.86,
+     iff(ad1>=1.2 and ad1<1.3,0.88,
+     iff(ad1>=1.3 and ad1<1.4,0.90,
+     iff(ad1>=1.4 and ad1<1.5,0.92,
+     iff(ad1>=1.5 and ad1<1.6,0.93,
+     iff(ad1>=1.6 and ad1<1.7,0.94,
+     iff(ad1>=1.7 and ad1<1.8,0.95,
+     iff(ad1>=1.8 and ad1<1.9,0.96,
+     iff(ad1>=1.9 and ad1<2.0,0.97,
+     iff(ad1>=2.0 and ad1<2.1,0.977,
+     iff(ad1>=2.1 and ad1<2.2,0.982,
+     iff(ad1>=2.2 and ad1<2.3,0.986,
+     iff(ad1>=2.3 and ad1<2.4,0.989,
+     iff(ad1>=2.4 and ad1<2.5,0.992,
+     iff(ad1>=2.5 and ad1<2.6,0.994,
+     iff(ad1>=2.6 and ad1<2.7,0.995,
+     iff(ad1>=2.7 and ad1<2.8,0.996,
+     iff(ad1>=2.8 and ad1<2.9,0.997,
+     iff(ad1>=2.9 and ad1<3.0,0.998,
+     iff(ad1>=3.0 and ad1<3.1,0.999,
+     iff(ad1>=3.1,0.999,
+     na)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+     
+//Cumulative distribution of Black's Approximation
+Nad2= iff(ad2<=0 and ad2>-0.1,0.50,
+     iff(ad2<=-0.1 and ad2>-0.2,0.46,
+     iff(ad2<=-0.2 and ad2>-0.3,0.42,
+     iff(ad2<=-0.3 and ad2>-0.4,0.38,
+     iff(ad2<=-0.4 and ad2>-0.5,0.35,
+     iff(ad2<=-0.5 and ad2>-0.6,0.31,
+     iff(ad2<=-0.6 and ad2>-0.7,0.27,
+     iff(ad2<=-0.7 and ad2>-0.8,0.24,
+     iff(ad2<=-0.8 and ad2>-0.9,0.21,
+     iff(ad2<=-0.9 and ad2>-1.0,0.18,
+     iff(ad2<=-1.0 and ad2>-1.1,0.16,
+     iff(ad2<=-1.1 and ad2>-1.2,0.14,
+     iff(ad2<=-1.2 and ad2>-1.3,0.12,
+     iff(ad2<=-1.3 and ad2>-1.4,0.10,
+     iff(ad2<=-1.4 and ad2>-1.5,0.08,
+     iff(ad2<=-1.6 and ad2>-1.7,0.06,
+     iff(ad2<=-1.7 and ad2>-1.8,0.05,
+     iff(ad2<=-1.8 and ad2>-1.9,0.04,
+     iff(ad2<=-1.9 and ad2>-2.0,0.03,
+     iff(ad2<=-2.0 and ad2>-2.1,0.023,
+     iff(ad2<=-2.1 and ad2>-2.2,0.018,
+     iff(ad2<=-2.2 and ad2>-2.3,0.014,
+     iff(ad2<=-2.3 and ad2>-2.4,0.011,
+     iff(ad2<=-2.4 and ad2>-2.5,0.010,
+     iff(ad2<=-2.5 and ad2>-2.6,0.006,
+     iff(ad2<=-2.6 and ad2>-2.7,0.005,
+     iff(ad2<=-2.7 and ad2>-2.8,0.004,
+     iff(ad2<=-2.8 and ad2>-2.9,0.003,
+     iff(ad2<=-2.9 and ad2>-3.0,0.002,
+     iff(ad2<=-3.0 and ad2>-3.1,0.001,
+     iff(ad2<=-3.1,0.001,
+     iff(ad2>=0 and ad2<0.1,0.50,
+     iff(ad2>=0.1 and ad2<0.2,0.54,
+     iff(ad2>=0.2 and ad2<0.3,0.58,
+     iff(ad2>=0.3 and ad2<0.4,0.62,
+     iff(ad2>=0.4 and ad2<0.5,0.66,
+     iff(ad2>=0.5 and ad2<0.6,0.69,
+     iff(ad2>=0.6 and ad2<0.7,0.73,
+     iff(ad2>=0.7 and ad2<0.8,0.76,
+     iff(ad2>=0.8 and ad2<0.9,0.78,
+     iff(ad2>=0.9 and ad2<1.0,0.82,
+     iff(ad2>=1.0 and ad2<1.1,0.84,
+     iff(ad2>=1.1 and ad2<1.2,0.86,
+     iff(ad2>=1.2 and ad2<1.3,0.88,
+     iff(ad2>=1.3 and ad2<1.4,0.90,
+     iff(ad2>=1.4 and ad2<1.5,0.92,
+     iff(ad2>=1.5 and ad2<1.6,0.93,
+     iff(ad2>=1.6 and ad2<1.7,0.94,
+     iff(ad2>=1.7 and ad2<1.8,0.95,
+     iff(ad2>=1.8 and ad2<1.9,0.96,
+     iff(ad2>=1.9 and ad2<2.0,0.97,
+     iff(ad2>=2.0 and ad2<2.1,0.977,
+     iff(ad2>=2.1 and ad2<2.2,0.982,
+     iff(ad2>=2.2 and ad2<2.3,0.986,
+     iff(ad2>=2.3 and ad2<2.4,0.989,
+     iff(ad2>=2.4 and ad2<2.5,0.992,
+     iff(ad2>=2.5 and ad2<2.6,0.994,
+     iff(ad2>=2.6 and ad2<2.7,0.995,
+     iff(ad2>=2.7 and ad2<2.8,0.996,
+     iff(ad2>=2.8 and ad2<2.9,0.997,
+     iff(ad2>=2.9 and ad2<3.0,0.998,
+     iff(ad2>=3.0 and ad2<3.1,0.999,
+     iff(ad2>=3.1,0.999,
+     na)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+
+//American Vanilla Call
+AmerCall1=discount1*Nd1-K*exp(-r*T)*Nd2
+AmerCall2=discount2*Nad1-K*exp(-r*(t2/len))*Nad2
+AmerCall= if AmerCall1<AmerCall2
+    AmerCall2
+else
+    AmerCall1
+
+//American Vanilla Put
+AmerPut1=K*exp(-r*T)*(1-Nd2)-discount1*(1-Nd1)
+AmerPut2=K*exp(-r*(t2/len))*(1-Nad2)-discount2*(1-Nad1)
+AmerPut= if AmerPut1<AmerPut2
+    AmerPut2
+else
+    AmerPut1
+
+type= input(title="Type of Option", defval="Long Call", options=["Long Call", "Long Put"])
+
+AmerPrice=if type=="Long Put"
+    AmerPut
+else
+    AmerCall
+
+
+//Plot Arguments
+plot(AmerPrice, title="Theoretical Option Value")
