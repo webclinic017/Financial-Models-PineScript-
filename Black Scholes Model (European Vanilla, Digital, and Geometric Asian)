@@ -1,0 +1,472 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © SegaRKO
+
+//@version=4
+study("Black-Scholes Model", precision=10)
+//Your Strike Price
+strike=input(1.12,minval=0.0001,title="Your Strike Price")
+r=input(0.00, minval=0.000000, title="Risk Free Rate")
+
+//Expected Movement Model
+src = close
+Minutes = input(0, title="Minutes until expiry")
+Hours = input(0, title="Hours until expiry")
+Days = input(31, minval=0, title="Days until expiry")
+Expiry = (Hours + Minutes / 60) / 24 + Days
+TimeFrame = input(1440, minval=0, title="Timeframe in minutes")
+len = 365  //Number of Days in a year. 
+Time = 60 * 24 * Expiry / TimeFrame
+Interval_Width=1
+
+LogReturn = log(close[1] / close[2])
+Average = sma(LogReturn, len)
+STDEV = stdev(LogReturn, len)
+Time_Average = Time * Average
+Time_STDEV = STDEV * sqrt(Time)
+
+lk = close * exp(Time_Average + Interval_Width * Time_STDEV)
+
+geo_length=input(31,minval=0,title="Number of Candles until expiry (Asian Geometric Only)")
+style= input(title="Style of Option", defval="European Vanilla", options=["European Vanilla", "Binary", "Asian Geometric"])
+type= input(title="Type of Option", defval="Long Call", options=["Long Call", "Long Put"])
+k = lk
+     
+z0=(strike-close)/(lk-close)
+z = z0
+
+//Calculating delta by using probability method
+deltac= iff(z>=0 and z<0.1,0.50,
+     iff(z>=0.1 and z<0.2,0.46,
+     iff(z>=0.2 and z<0.3,0.42,
+     iff(z>=0.3 and z<0.4,0.38,
+     iff(z>=0.4 and z<0.5,0.35,
+     iff(z>=0.5 and z<0.6,0.31,
+     iff(z>=0.6 and z<0.7,0.27,
+     iff(z>=0.7 and z<0.8,0.24,
+     iff(z>=0.8 and z<0.9,0.21,
+     iff(z>=0.9 and z<1.0,0.18,
+     iff(z>=1.0 and z<1.1,0.16,
+     iff(z>=1.1 and z<1.2,0.14,
+     iff(z>=1.2 and z<1.3,0.12,
+     iff(z>=1.3 and z<1.4,0.10,
+     iff(z>=1.4 and z<1.5,0.08,
+     iff(z>=1.5 and z<1.6,0.07,
+     iff(z>=1.6 and z<1.7,0.06,
+     iff(z>=1.7 and z<1.8,0.05,
+     iff(z>=1.8 and z<1.9,0.04,
+     iff(z>=1.9 and z<2.0,0.03,
+     iff(z>=2.0 and z<2.1,0.023,
+     iff(z>=2.1 and z<2.2,0.018,
+     iff(z>=2.2 and z<2.3,0.014,
+     iff(z>=2.3 and z<2.4,0.011,
+     iff(z>=2.4 and z<2.5,0.010,
+     iff(z>=2.5 and z<2.6,0.006,
+     iff(z>=2.6 and z<2.7,0.005,
+     iff(z>=2.7 and z<2.8,0.004,
+     iff(z>=2.8 and z<2.9,0.003,
+     iff(z>=2.9 and z<3.0,0.002,
+     iff(z>=3.0 and z<3.1,0.001,
+     iff(z<=0 and z>-0.1,0.50,
+     iff(z<=-0.1 and z>-0.2,0.54,
+     iff(z<=-0.2 and z>-0.3,0.58,
+     iff(z<=-0.3 and z>-0.4,0.62,
+     iff(z<=-0.4 and z>-0.5,0.66,
+     iff(z<=-0.5 and z>-0.6,0.69,
+     iff(z<=-0.6 and z>-0.7,0.73,
+     iff(z<=-0.7 and z>-0.8,0.76,
+     iff(z<=-0.8 and z>-0.9,0.78,
+     iff(z<=-0.9 and z>-1.0,0.82,
+     iff(z<=-1.0 and z>-1.1,0.84,
+     iff(z<=-1.1 and z>-1.2,0.86,
+     iff(z<=-1.2 and z>-1.3,0.88,
+     iff(z<=-1.3 and z>-1.4,0.90,
+     iff(z<=-1.4 and z>-1.5,0.92,
+     iff(z<=-1.5 and z>-1.6,0.93,
+     iff(z<=-1.6 and z>-1.7,0.94,
+     iff(z<=-1.7 and z>-1.8,0.95,
+     iff(z<=-1.8 and z>-1.9,0.96,
+     iff(z<=-1.9 and z>-2.0,0.97,
+     iff(z<=-2.0 and z>-2.1,0.977,
+     iff(z<=-2.1 and z>-2.2,0.982,
+     iff(z<=-2.2 and z>-2.3,0.986,
+     iff(z<=-2.3 and z>-2.4,0.989,
+     iff(z<=-2.4 and z>-2.5,0.992,
+     iff(z<=-2.5 and z>-2.6,0.994,
+     iff(z<=-2.6 and z>-2.7,0.995,
+     iff(z<=-2.7 and z>-2.8,0.996,
+     iff(z<=-2.8 and z>-2.9,0.997,
+     iff(z<=-2.9 and z>-3.0,0.998,
+     iff(z<=-3.0 and z>-3.1,0.999,
+     na))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+ 
+//Black-Scholes
+T=Expiry/365
+BSd1=(((log(close/strike))+((r+(pow(STDEV,2)/2))*T))*(1/STDEV*sqrt(T)))
+BSd2=(BSd1-(STDEV*sqrt(T)))
+PVK=strike * exp(-r*T)
+
+//Geometric Average Asian Option Model
+geo_stdev=STDEV/sqrt(3)
+b=0.5*(r-(0.5*pow(geo_stdev,2)))
+GAd1=((log(close/strike)) + ((b + (0.5*pow(geo_stdev,2)))*T)) / (geo_stdev*sqrt(T))
+GAd2=GAd1-(geo_stdev*sqrt(T))
+
+
+//d1 if statements
+d1= if style=="Asian Geometric"
+    GAd1
+else if style=="Binary"
+    BSd1
+else
+    BSd1
+
+//d2 if statements
+d2= if style=="Asian Geometric"
+    GAd2
+else if style=="Binary"
+    BSd2
+else
+    BSd2
+
+
+//Cumulative distribution of Black Scholes d1
+Nd1= iff(d1<=0 and d1>-0.1,0.50,
+     iff(d1<=-0.1 and d1>-0.2,0.46,
+     iff(d1<=-0.2 and d1>-0.3,0.42,
+     iff(d1<=-0.3 and d1>-0.4,0.38,
+     iff(d1<=-0.4 and d1>-0.5,0.35,
+     iff(d1<=-0.5 and d1>-0.6,0.31,
+     iff(d1<=-0.6 and d1>-0.7,0.27,
+     iff(d1<=-0.7 and d1>-0.8,0.24,
+     iff(d1<=-0.8 and d1>-0.9,0.21,
+     iff(d1<=-0.9 and d1>-1.0,0.18,
+     iff(d1<=-1.0 and d1>-1.1,0.16,
+     iff(d1<=-1.1 and d1>-1.2,0.14,
+     iff(d1<=-1.2 and d1>-1.3,0.12,
+     iff(d1<=-1.3 and d1>-1.4,0.10,
+     iff(d1<=-1.4 and d1>-1.5,0.08,
+     iff(d1<=-1.6 and d1>-1.7,0.06,
+     iff(d1<=-1.7 and d1>-1.8,0.05,
+     iff(d1<=-1.8 and d1>-1.9,0.04,
+     iff(d1<=-1.9 and d1>-2.0,0.03,
+     iff(d1<=-2.0 and d1>-2.1,0.023,
+     iff(d1<=-2.1 and d1>-2.2,0.018,
+     iff(d1<=-2.2 and d1>-2.3,0.014,
+     iff(d1<=-2.3 and d1>-2.4,0.011,
+     iff(d1<=-2.4 and d1>-2.5,0.010,
+     iff(d1<=-2.5 and d1>-2.6,0.006,
+     iff(d1<=-2.6 and d1>-2.7,0.005,
+     iff(d1<=-2.7 and d1>-2.8,0.004,
+     iff(d1<=-2.8 and d1>-2.9,0.003,
+     iff(d1<=-2.9 and d1>-3.0,0.002,
+     iff(d1<=-3.0 and d1>-3.1,0.001,
+     iff(d1<=-3.1,0.001,
+     iff(d1>=0 and d1<0.1,0.50,
+     iff(d1>=0.1 and d1<0.2,0.54,
+     iff(d1>=0.2 and d1<0.3,0.58,
+     iff(d1>=0.3 and d1<0.4,0.62,
+     iff(d1>=0.4 and d1<0.5,0.66,
+     iff(d1>=0.5 and d1<0.6,0.69,
+     iff(d1>=0.6 and d1<0.7,0.73,
+     iff(d1>=0.7 and d1<0.8,0.76,
+     iff(d1>=0.8 and d1<0.9,0.78,
+     iff(d1>=0.9 and d1<1.0,0.82,
+     iff(d1>=1.0 and d1<1.1,0.84,
+     iff(d1>=1.1 and d1<1.2,0.86,
+     iff(d1>=1.2 and d1<1.3,0.88,
+     iff(d1>=1.3 and d1<1.4,0.90,
+     iff(d1>=1.4 and d1<1.5,0.92,
+     iff(d1>=1.5 and d1<1.6,0.93,
+     iff(d1>=1.6 and d1<1.7,0.94,
+     iff(d1>=1.7 and d1<1.8,0.95,
+     iff(d1>=1.8 and d1<1.9,0.96,
+     iff(d1>=1.9 and d1<2.0,0.97,
+     iff(d1>=2.0 and d1<2.1,0.977,
+     iff(d1>=2.1 and d1<2.2,0.982,
+     iff(d1>=2.2 and d1<2.3,0.986,
+     iff(d1>=2.3 and d1<2.4,0.989,
+     iff(d1>=2.4 and d1<2.5,0.992,
+     iff(d1>=2.5 and d1<2.6,0.994,
+     iff(d1>=2.6 and d1<2.7,0.995,
+     iff(d1>=2.7 and d1<2.8,0.996,
+     iff(d1>=2.8 and d1<2.9,0.997,
+     iff(d1>=2.9 and d1<3.0,0.998,
+     iff(d1>=3.0 and d1<3.1,0.999,
+     iff(d1>=3.1,0.999,
+     na)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+     
+//Cumulative distribution of Black Scholes d2     
+Nd2= iff(d2<=0 and d2>-0.1,0.50,
+     iff(d2<=-0.1 and d2>-0.2,0.46,
+     iff(d2<=-0.2 and d2>-0.3,0.42,
+     iff(d2<=-0.3 and d2>-0.4,0.38,
+     iff(d2<=-0.4 and d2>-0.5,0.35,
+     iff(d2<=-0.5 and d2>-0.6,0.31,
+     iff(d2<=-0.6 and d2>-0.7,0.27,
+     iff(d2<=-0.7 and d2>-0.8,0.24,
+     iff(d2<=-0.8 and d2>-0.9,0.21,
+     iff(d2<=-0.9 and d2>-1.0,0.18,
+     iff(d2<=-1.0 and d2>-1.1,0.16,
+     iff(d2<=-1.1 and d2>-1.2,0.14,
+     iff(d2<=-1.2 and d2>-1.3,0.12,
+     iff(d2<=-1.3 and d2>-1.4,0.10,
+     iff(d2<=-1.4 and d2>-1.5,0.08,
+     iff(d2<=-1.6 and d2>-1.7,0.06,
+     iff(d2<=-1.7 and d2>-1.8,0.05,
+     iff(d2<=-1.8 and d2>-1.9,0.04,
+     iff(d2<=-1.9 and d2>-2.0,0.03,
+     iff(d2<=-2.0 and d2>-2.1,0.023,
+     iff(d2<=-2.1 and d2>-2.2,0.018,
+     iff(d2<=-2.2 and d2>-2.3,0.014,
+     iff(d2<=-2.3 and d2>-2.4,0.011,
+     iff(d2<=-2.4 and d2>-2.5,0.010,
+     iff(d2<=-2.5 and d2>-2.6,0.006,
+     iff(d2<=-2.6 and d2>-2.7,0.005,
+     iff(d2<=-2.7 and d2>-2.8,0.004,
+     iff(d2<=-2.8 and d2>-2.9,0.003,
+     iff(d2<=-2.9 and d2>-3.0,0.002,
+     iff(d2<=-3.0 and d2>-3.1,0.001,
+     iff(d2<=-3.1,0.001,
+     iff(d2>=0 and d2<0.1,0.50,
+     iff(d2>=0.1 and d2<0.2,0.54,
+     iff(d2>=0.2 and d2<0.3,0.58,
+     iff(d2>=0.3 and d2<0.4,0.62,
+     iff(d2>=0.4 and d2<0.5,0.66,
+     iff(d2>=0.5 and d2<0.6,0.69,
+     iff(d2>=0.6 and d2<0.7,0.73,
+     iff(d2>=0.7 and d2<0.8,0.76,
+     iff(d2>=0.8 and d2<0.9,0.78,
+     iff(d2>=0.9 and d2<1.0,0.82,
+     iff(d2>=1.0 and d2<1.1,0.84,
+     iff(d2>=1.1 and d2<1.2,0.86,
+     iff(d2>=1.2 and d2<1.3,0.88,
+     iff(d2>=1.3 and d2<1.4,0.90,
+     iff(d2>=1.4 and d2<1.5,0.92,
+     iff(d2>=1.5 and d2<1.6,0.93,
+     iff(d2>=1.6 and d2<1.7,0.94,
+     iff(d2>=1.7 and d2<1.8,0.95,
+     iff(d2>=1.8 and d2<1.9,0.96,
+     iff(d2>=1.9 and d2<2.0,0.97,
+     iff(d2>=2.0 and d2<2.1,0.977,
+     iff(d2>=2.1 and d2<2.2,0.982,
+     iff(d2>=2.2 and d2<2.3,0.986,
+     iff(d2>=2.3 and d2<2.4,0.989,
+     iff(d2>=2.4 and d2<2.5,0.992,
+     iff(d2>=2.5 and d2<2.6,0.994,
+     iff(d2>=2.6 and d2<2.7,0.995,
+     iff(d2>=2.7 and d2<2.8,0.996,
+     iff(d2>=2.8 and d2<2.9,0.997,
+     iff(d2>=2.9 and d2<3.0,0.998,
+     iff(d2>=3.0 and d2<3.1,0.999,
+     iff(d2>=3.1,0.999,
+     na)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+
+//European Vanilla Pricing
+BSCallPrice=abs((Nd1*close)-(Nd2*PVK))
+BSPutPrice=((1-Nd2)*PVK)-((1-Nd1)*close)
+
+OptionPrice= if type=="Long Put"
+    BSPutPrice
+else
+    BSCallPrice
+
+//Probability Density Function & IV
+pdf1=(exp(-(pow(d1,2)/2)))/sqrt(44/7)
+pdf2=(exp(-(pow(d2,2)/2)))/sqrt(44/7)
+standard_dev=stdev(src,len)
+
+IV = (standard_dev / (close * sqrt(Expiry/365)))
+//1st Order greeks (Vanna and Gamma are 2nd order, but included in this section because they are necessary to calculate Theta and Vega)
+deltap=-(1-deltac)
+
+delta=if type=="Long Put"
+    deltap
+else
+    deltac
+
+gamma=PVK*(pdf2/(pow(close,2)*IV*sqrt(T)))
+
+Theta=(-0.5*gamma*pow(IV,2)*pow(close,2))/365
+
+vanna=abs((change(delta)/change(IV)))
+
+vega=abs((vanna*change(close))/365)
+
+rhoc=strike*T*exp(-r*T)*Nd2
+rhop=-(strike)*T*exp(-r*T)*(1-Nd2)
+rho= if type=="Long Put"
+    rhop
+else
+    rhoc
+
+//2nd order Greeks
+charm=-(change(Theta)/change(close))/365
+vomma=change(vega)/change(IV)
+veta=((-1*Theta)*(1/vega)*(1/IV)*change(vega))/(36500)
+vera=((change(rho))/(change(IV)))
+
+//3rd Order greeks
+speed=change(gamma)/change(close)
+zomma=change(vanna)/change(close)
+color_greek=(gamma*Theta*(1/vega)*(1/change(IV)))/365
+ultima=(change(vomma)/change(IV)) 
+
+//Probability of touch. This is typically 2*Probability of ITM. And since delta can be used to approximate proability of ITM. POT will be calculated as below.
+pot=abs((2*delta)*100)
+touch=if pot>99.9
+    99.9
+else
+    pot
+
+     
+//Binary Pricing
+BinaryPrice=abs(delta*100)//The price of a binary option is equivalent to the delta of a comparable vanilla option.
+//1st order Binary Greeks (Vanna and Gamma are 2nd order, but incuded here because they are necessary to calculate Theta and Vega)
+binary_delta=if type=="Long Put" //The delta of a binary option is equivalent to the gamma of a comparable vanilla option.
+    -(gamma*100) 
+else
+    gamma*100
+binary_gamma=abs(speed)*100
+binary_vanna=abs((change(binary_delta)/change(IV)))
+binary_theta=(-0.5*binary_gamma*pow(IV,2)*pow(close,2))/365
+binary_vega=abs((binary_vanna*change(close))/365)
+
+//2nd order Binary Greeks
+binary_charm=-(change(binary_theta)/change(close))/365
+binary_vomma=change(binary_vega)/change(IV)
+binary_veta=((-1*binary_theta)*(1/binary_vega)*(1/IV)*change(binary_vega))/(36500)
+
+//3rd order Binary Greeks
+binary_speed=change(binary_gamma)/change(close)
+binary_zomma=change(binary_vanna)/change(close)
+binary_color_greek=(binary_gamma*binary_theta*(1/binary_vega)*(1/change(IV)))/365
+binary_ultima=(change(binary_vomma)/change(IV)) 
+
+//Asian Pricing:
+//Geometric Average Calculation
+my_gma(price, length) =>
+    product = price
+    for i = 1 to length-1
+        product := product * price[i]
+    product
+exponent=1/geo_length
+gma=pow(my_gma(close,geo_length),exponent)
+//
+
+//Asian Geometric Average Pricing
+GACall=abs((close*exp((b-r)*T)*Nd1) - (PVK*Nd2))
+GAPut=abs(GACall - ((close*exp((b-r)*T)) - PVK))
+
+GAPrice= if type=="Long Put"
+    GAPut
+else
+    GACall
+
+//1st order Binary Greeks (Gamma is 2nd order, but incuded here because it is necessary to calculate Theta)
+GAdeltac=abs(change(GAPrice)/change(close))
+
+GAdelta = if type=="Long Put"
+    -(abs(change(GAPrice)/change(close)))
+else
+    GAdeltac
+
+
+GAvega1=abs(change(GAPrice)/change(IV))
+GAvega2=vega/sqrt(3) //The Vega of an ATM Asian option is equal to the Vega of a comparable European Vanilla/sqrt(3) 
+GAvega = if gma==strike
+    GAvega2
+else
+    GAvega1
+GAgamma=PVK*(pdf2/(pow(close,2)*IV*sqrt(T)))
+GAtheta=(-0.5*GAgamma*pow(IV,2)*pow(close,2))/365
+
+//2nd order Binary Greeks
+GAvanna=abs((change(GAdelta)/change(IV)))
+GAcharm=-(change(GAtheta)/change(close))/365
+GAvomma=change(GAvega)/change(IV)
+GAveta=((-1*GAtheta)*(1/GAvega)*(1/IV)*change(GAvega))/(36500)
+
+//3rd order Binary Greeks
+GAspeed=change(GAgamma)/change(close)
+GAzomma=change(GAvanna)/change(close)
+GA_color_greek=(GAgamma*GAtheta*(1/GAvega)*(1/change(IV)))/365
+GAultima=(change(GAvomma)/change(IV)) 
+
+
+
+//Greek choices
+greek_choice=input(title="Choose Greek", defval="Delta", options=["Delta", "Gamma", "Theta", "Vega", "Rho", "Vanna", "Charm", "Vomma",  "Veta", "Vera", "Speed", "Zomma", "Color", "Ultima", "Probability of Touch"])
+
+Vanilla_Greeks=iff(greek_choice=="Delta",delta,
+     iff(greek_choice=="Gamma",gamma,
+     iff(greek_choice=="Theta",Theta,
+     iff(greek_choice=="Vega",vega,
+     iff(greek_choice=="Rho",rho,
+     iff(greek_choice=="Vanna",vanna,
+     iff(greek_choice=="Charm",charm,
+     iff(greek_choice=="Vomma",vomma,
+     iff(greek_choice=="Veta",veta,
+     iff(greek_choice=="Vera",vera,
+     iff(greek_choice=="Speed",speed,
+     iff(greek_choice=="Zomma",zomma,
+     iff(greek_choice=="Color",color_greek,
+     iff(greek_choice=="Ultima",ultima,
+     iff(greek_choice=="Probability of Touch",touch,
+     delta)))))))))))))))
+
+Binary_Greeks=iff(greek_choice=="Delta",binary_delta,
+     iff(greek_choice=="Gamma",binary_gamma,
+     iff(greek_choice=="Theta",binary_theta,
+     iff(greek_choice=="Vega",binary_vega,
+     iff(greek_choice=="Rho",0,
+     iff(greek_choice=="Vanna",binary_vanna,
+     iff(greek_choice=="Charm",binary_charm,
+     iff(greek_choice=="Vomma",binary_vomma,
+     iff(greek_choice=="Veta",binary_veta,
+     iff(greek_choice=="Vera",0,
+     iff(greek_choice=="Speed",binary_speed,
+     iff(greek_choice=="Zomma",binary_zomma,
+     iff(greek_choice=="Color",binary_color_greek,
+     iff(greek_choice=="Ultima",binary_ultima,
+     iff(greek_choice=="Probability of Touch",touch,
+     binary_delta)))))))))))))))
+
+Geometric_Greeks=iff(greek_choice=="Delta",GAdelta,
+     iff(greek_choice=="Gamma",GAgamma,
+     iff(greek_choice=="Theta",GAtheta,
+     iff(greek_choice=="Vega",GAvega,
+     iff(greek_choice=="Rho",0,
+     iff(greek_choice=="Vanna",GAvanna,
+     iff(greek_choice=="Charm",GAcharm,
+     iff(greek_choice=="Vomma",GAvomma,
+     iff(greek_choice=="Veta",GAveta,
+     iff(greek_choice=="Vera",0,
+     iff(greek_choice=="Speed",GAspeed,
+     iff(greek_choice=="Zomma",GAzomma,
+     iff(greek_choice=="Color",GA_color_greek,
+     iff(greek_choice=="Ultima",GAultima,
+     iff(greek_choice=="Probability of Touch",0,
+     binary_delta)))))))))))))))
+
+//Which Greeks will be presented: Vanilla or Long Binary Call
+Greeks=if style=="Binary"
+    Binary_Greeks
+else if style=="Asian Geometric"
+    Geometric_Greeks
+else
+    Vanilla_Greeks
+
+//Which Price will be presented: Vanilla or Long Binary Call
+Price = if style=="Binary"
+    BinaryPrice 
+else if style=="Asian Geometric"
+    GAPrice //Geometric Average Asian Option Price
+else
+    OptionPrice //This is the vanilla option price.
+
+//Plot Arguments
+plot(Price, title="Theoretical Option Value")
+plot(Greeks,title="Greeks", color=color.green)
+plot(IV*100, title="Implied volatility", color=color.red)
+
