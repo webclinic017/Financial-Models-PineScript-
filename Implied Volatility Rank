@@ -1,0 +1,29 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © SegaRKO
+//@version=4
+study(title="Implied Volatility Rank", overlay=false, precision=5)
+
+src = input(close)
+Minutes = input(0, title="Minutes until expiry")
+Hours = input(0, title="Hours until expiry")
+Days = input(365, minval=0, title="Days until expiry")
+Expiry = (Hours + Minutes / 60) / 24 + Days
+TimeFrame = input(1, minval=.0001, title="Timeframe in minutes")
+len = 365  //Number of Days in a year. 
+Delta = input(1, minval=0.01, title="Delta (40D=0.255,30D=0.525,20D=0.84,16D=1,10D=1.28,5D=1.645)")
+
+
+
+standard_dev=Delta*stdev(src,len)
+
+Implied_Volatility = (standard_dev / (close * sqrt(Expiry/365)))*100
+
+IVR = (Implied_Volatility - lowest(Implied_Volatility, len)) / 
+   (highest(Implied_Volatility, len) - lowest(Implied_Volatility, len)) * 100
+
+col = IVR <= 49 ? color.red : IVR >= 50 ? color.green : color.green
+plot(Implied_Volatility, title="Implied Volatility", color=color.red)
+plot(IVR, title="IVR", color=col)
+
+
+
