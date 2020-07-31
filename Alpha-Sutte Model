@@ -1,0 +1,47 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © SegaRKO
+//@version=4
+study("Alpha-Sutte Model", overlay=true)
+//Alpha Sutte
+delta = close[4]
+alpha = close[3]
+beta = close[2]
+gamma = close[1]
+x = alpha - delta
+y = beta - alpha
+z = gamma - beta
+a = alpha + delta
+b = beta + alpha
+g = gamma + beta
+P1 = x / a
+P1a = P1 / 2
+P1b = P1a * alpha
+P2 = y / b
+P2a = P2 / 2
+P2b = P2a * beta
+P3 = z / g
+P3a = P3 / 2
+P3b = P3a * gamma
+greeksum = P1b + P2b + P3b
+a_t = greeksum / 3
+a_t0 = a_t + close[1]
+plot(a_t0, title="Alpha-Sutte")
+
+//Sutte
+SutteL = (close + close[1]) / 2 + close - low
+SutteH = (close + close[1]) / 2 + high - close
+Sutte = (SutteL + SutteH) / 2
+
+//This is an experimental feature I added.
+//Adaptive Alpha Sutte
+Combo=avg(a_t0, Sutte)
+plot(Combo, color=color.yellow, title="Adaptive Alpha Sutte", transp=40)
+
+//Sutte High and Low MA's
+len = input(1, minval=1, title="Sutte MA length")
+SutteLMA = sma(SutteL, len)
+SutteHMA = sma(SutteH, len)
+
+//When the Sutte Low is greater than the Sutte High you buy, when Sutte High is greater than Sutte Low you sell.
+plot(SutteLMA, title="Sutte Low MA", color=color.aqua)
+plot(SutteHMA, title="Sutte High MA", color=color.red)
