@@ -8,7 +8,7 @@ Minutes = input(0, title="Minutes until expiry")
 Hours = input(0, title="Hours until expiry")
 Days = input(365, minval=0, title="Days until expiry")
 Expiry = (Hours + Minutes / 60) / 24 + Days
-TimeFrame = input(1, minval=.0001, title="Timeframe in minutes")
+TimeFrame = input(1440, minval=.0001, title="Timeframe in minutes")
 len = 365  //Number of Days in a year. 
 Delta = input(1, minval=0.01, title="Delta (40D=0.255,30D=0.525,20D=0.84,16D=1,10D=1.28,5D=1.645)")
 
